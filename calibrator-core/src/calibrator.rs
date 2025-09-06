@@ -29,8 +29,18 @@ impl Calibrator {
     /// # Returns
     ///
     /// Returns a calibration result which contains camera intrinsics/distortion coefficients
-    pub fn solve(cal_data: &CalibrationData) -> f64 {
+    pub fn solve(cal_data: &CalibrationData) -> Result<f64, String> {
+        // Check if at least two images are included in the Calibration data.
+        if cal_data.images.len() < 2 {
+            return Err("Calibration requires at least 2 images to run.".to_string());
+        }
+
+        // Estimate the 5 intrinsic parameters and all extrinsic parameters using closed form solution
+
+        // Estimate radial distortion parameters using linear least squares
+
+        // Refine parameter estimates using nonlinear least squares
         let tmp: f64 = 1.0;
-        tmp
+        Ok(tmp)
     }
 }
