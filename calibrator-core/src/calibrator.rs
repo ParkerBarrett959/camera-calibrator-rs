@@ -1,5 +1,7 @@
 //! Top Level Camera Calibration
 use crate::types::CalibrationData;
+use crate::utilities::homography_from_image;
+use nalgebra::{DMatrix, Matrix3};
 
 /// Calibrator struct definition
 ///
@@ -30,9 +32,27 @@ impl Calibrator {
     ///
     /// Returns a calibration result which contains camera intrinsics/distortion coefficients
     pub fn solve(cal_data: &CalibrationData) -> Result<f64, String> {
-        // Check if at least two images are included in the Calibration data.
-        if cal_data.images.len() < 2 {
-            return Err("Calibration requires at least 2 images to run.".to_string());
+        // Check if at least three images are included in the Calibration data.
+        let n: usize = cal_data.images.len();
+        if n < 3 {
+            return Err("Calibration requires at least 3 images to run.".to_string());
+        }
+
+        // Define V matrix from the homographies defined by each set of image correspondences
+        let mut v = DMatrix::<f64>::zeros(2 * n, 6);
+        let mut homography_failure_count: usize = 0;
+        for i in 0..n {
+            // Get homography, H from the current image. Verify there are still enough images to solve.
+            let maybe_h: Result<Matrix3<f64>, String> = homography_from_image(&cal_data.images[i]);
+            if maybe_h.is_err() {
+                homography_failure_count += 1;
+                if n - homography_failure_count < 3 {
+                    return Err("Calibration requires at least 3 images with 4 or more correspondences each to run.".to_string());
+                }
+            }
+
+            // Update elements of V
+            v[(i, 0)] = 1.0;
         }
 
         // Estimate the 5 intrinsic parameters and all extrinsic parameters using closed form solution
